@@ -1,0 +1,38 @@
+
+{
+  "name": "Nitro Racer Pro: Ultimate Edition",
+  "short_name": "NitroPro",
+  "description": "A high-speed PWA racing game with dynamic levels, daily rewards, and advanced power-ups.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#ffcc00",
+  "orientation": "portrait",
+  "categories": ["games", "arcade", "action"],
+  "dir": "ltr", 
+  "lang": "en-US",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/741/741407.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/741/741407.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/741/741407.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Nitro Racer Gameplay"
+    }
+  ]
+}
+  

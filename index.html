@@ -1,0 +1,441 @@
+
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Nitro Racer Pro: Ultimate</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffcc00">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <style>
+        :root {
+            --primary: #ffcc00;
+            --accent: #00ffcc;
+            --danger: #ff4444;
+            --gold: #ffd700;
+            --shield: #3498db;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            outline: none;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background: #050505;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: white;
+            display: flex; flex-direction: column;
+            height: 100vh; overflow: hidden;
+            touch-action: none;
+        }
+
+        /* Top HUD */
+        .game-header {
+            width: 100%;
+            display: flex; justify-content: space-between;
+            padding: env(safe-area-inset-top) 20px 10px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+            z-index: 100;
+        }
+
+        .stat-card {
+            background: var(--glass);
+            padding: 5px 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .stat-label { font-size: 0.6rem; text-transform: uppercase; color: #bbb; display: block; }
+        .stat-value { font-size: 1.1rem; font-weight: 800; color: #fff; }
+
+        /* Game Stage */
+        #game-viewport {
+            position: relative;
+            flex-grow: 1;
+            background: url('https://img.freepik.com/free-vector/night-ocean-landscape-with-full-moon-stars_107791-6654.jpg') repeat-x;
+            background-size: cover;
+            background-position: bottom;
+            overflow: hidden;
+        }
+
+        #car {
+            position: absolute; bottom: 60px; left: 15%;
+            width: 90px; z-index: 50;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.6));
+            transition: transform 0.15s ease-out;
+        }
+
+        /* Entities & Variety */
+        .entity {
+            position: absolute; bottom: 60px; right: -60px;
+            width: 50px; height: 50px;
+            background-size: contain; background-repeat: no-repeat;
+            background-position: center;
+        }
+        .obs-tall { height: 80px; bottom: 60px; } 
+        .obs-long { width: 100px; bottom: 60px; } 
+
+        /* Overlay Screens */
+        .overlay {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(15px);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 200; padding: 20px; text-align: center;
+        }
+
+        .btn-action {
+            background: var(--primary); color: #000;
+            border: none; padding: 12px 30px;
+            border-radius: 50px; font-size: 1.1rem;
+            font-weight: 900; margin-top: 10px;
+            box-shadow: 0 8px 20px rgba(255, 204, 0, 0.4);
+            text-transform: uppercase; letter-spacing: 1px;
+            cursor: pointer;
+        }
+
+        /* Shop System UI */
+        .shop-container {
+            margin: 10px 0;
+            display: flex; gap: 10px;
+            width: 100%; max-width: 350px;
+        }
+        .shop-item {
+            flex: 1;
+            background: var(--glass); padding: 10px; border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        .upgrade-btn {
+            background: var(--accent); color: #000; border: none;
+            width: 100%; padding: 5px; border-radius: 8px; font-weight: bold; margin-top: 5px;
+        }
+
+        /* 🚗 New Garage UI */
+        .garage-title { color: var(--primary); font-size: 0.9rem; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .car-selector { 
+            display: flex; gap: 12px; margin: 10px 0; 
+            overflow-x: auto; width: 100%; padding: 10px 5px;
+            scrollbar-width: none;
+        }
+        .car-selector::-webkit-scrollbar { display: none; }
+
+        .car-option {
+            min-width: 85px; height: 85px;
+            background: var(--glass);
+            border-radius: 15px; border: 2px solid transparent;
+            padding: 8px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            position: relative; flex-shrink: 0;
+        }
+        .car-option.selected { border-color: var(--primary); background: rgba(255, 204, 0, 0.1); }
+        .car-option img { width: 100%; height: 60%; object-fit: contain; }
+        .car-price { font-size: 0.65rem; color: var(--gold); font-weight: bold; margin-top: 4px; }
+        .locked-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.7);
+            border-radius: 13px; display: flex; align-items: center;
+            justify-content: center; font-size: 1.2rem;
+        }
+
+        /* FX */
+        .shield-fx { outline: 5px solid var(--shield); border-radius: 50%; box-shadow: 0 0 40px var(--shield); }
+        
+        .tap-indicator {
+            position: absolute; bottom: 20px; width: 100%;
+            text-align: center; color: rgba(255,255,255,0.3);
+            font-size: 0.8rem; letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-header">
+        <div class="stat-card">
+            <span class="stat-label">اسکور</span>
+            <span id="score" class="stat-value">0</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">لیول</span>
+            <span id="level" class="stat-value">1</span>
+        </div>
+        <div id="coin-card" class="stat-card" style="border-bottom: 3px solid var(--gold)">
+            <span class="stat-label">سکے</span>
+            <span id="total-coins" class="stat-value">0</span>
+        </div>
+    </div>
+
+    <div id="game-viewport">
+        <div id="menu-screen" class="overlay">
+            <h1 style="font-size: 2.2rem; margin: 0; color: var(--primary); font-style: italic;">NITRO PRO</h1>
+            <p id="reward-msg" style="color: var(--accent); font-weight: bold; display: none; margin: 5px; font-size: 0.8rem;">+50 ڈیلی سکے موصول ہوئے! 🎁</p>
+            
+            <div class="shop-container">
+                <div class="shop-item">
+                    <span>رفتار (Lvl <span id="speed-lvl">1</span>)</span>
+                    <button class="upgrade-btn" onclick="upgrade('speed')">50 💰</button>
+                </div>
+                <div class="shop-item">
+                    <span>شیلڈ (Lvl <span id="shield-lvl">1</span>)</span>
+                    <button class="upgrade-btn" onclick="upgrade('shield')">75 💰</button>
+                </div>
+            </div>
+
+            <div class="garage-title">اپنی گاڑی منتخب کریں</div>
+            <div class="car-selector" id="car-list">
+                </div>
+
+            <button class="btn-action" onclick="startGame()">اسٹارٹ ریس</button>
+        </div>
+
+        <div id="gameover-screen" class="overlay" style="display:none">
+            <h1 style="color: var(--danger); font-size: 2.5rem;">CRASHED!</h1>
+            <p id="final-stats" style="font-size: 1.2rem;"></p>
+            <button class="btn-action" onclick="location.reload()">دوبارہ کوشش</button>
+        </div>
+
+        <img id="car" src="" alt="Car">
+        <div class="tap-indicator">جمپ کے لیے کہیں بھی ٹچ کریں</div>
+    </div>
+
+    <script>
+        // --- 🚗 Garage Logic (ارسلان، یہاں اپنی تصویروں کے لنکس ڈالیں) ---
+        const carGarage = [
+            { id: 'car1', img: 'https://storage.googleapis.com/eu.artifacts.grp-serv-digi-prod-pepafr-twp.appspot.com/pep-africa/uploads/products/bs220905.png', price: 0 },
+            { id: 'car2', img: 'https://www.freeiconspng.com/uploads/top-racing-car-png-13.png', price: 200 },
+            { id: 'car3', img: 'https://www.freeiconspng.com/uploads/red-racing-car-png-5.png', price: 500 },
+            { id: 'car4', img: 'https://www.freeiconspng.com/uploads/f1-racing-car-png-26.png', price: 1000 }
+        ];
+
+        // --- 🔊 Sound System ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(freq, type, duration) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const carImg = document.getElementById('car');
+        const scoreEl = document.getElementById('score');
+        const levelEl = document.getElementById('level');
+        const coinEl = document.getElementById('total-coins');
+        const viewport = document.getElementById('game-viewport');
+        const carListEl = document.getElementById('car-list');
+
+        let upgrades = JSON.parse(localStorage.getItem('nitro_upgrades')) || { speed: 1, shield: 1 };
+        let unlockedCars = JSON.parse(localStorage.getItem('nitro_unlocked')) || ['car1'];
+        let activeCarId = localStorage.getItem('nitro_active_car') || 'car1';
+
+        let state = {
+            playing: false,
+            score: 0,
+            level: 1,
+            coins: parseInt(localStorage.getItem('nitro_coins')) || 0,
+            speed: 6 + (upgrades.speed * 0.5),
+            jumping: false,
+            shield: false,
+            shieldTime: 7000 + (upgrades.shield * 1000),
+            bgPos: 0,
+            carType: activeCarId
+        };
+
+        // --- 🛠️ Render Garage System ---
+        function renderGarage() {
+            carListEl.innerHTML = '';
+            carGarage.forEach(carData => {
+                const isUnlocked = unlockedCars.includes(carData.id);
+                const isSelected = state.carType === carData.id;
+                
+                const card = document.createElement('div');
+                card.className = `car-option ${isSelected ? 'selected' : ''}`;
+                card.onclick = () => handleCarSelection(carData);
+                
+                card.innerHTML = `
+                    <img src="${carData.img}" style="${carData.id === 'car2' ? 'transform:rotate(90deg)' : ''}">
+                    <div class="car-price">${isUnlocked ? 'AVAILABLE' : carData.price + ' 💰'}</div>
+                    ${!isUnlocked ? '<div class="locked-overlay">🔒</div>' : ''}
+                `;
+                carListEl.appendChild(card);
+                
+                if(isSelected) {
+                    carImg.src = carData.img;
+                    if(carData.id === 'car2') carImg.style.transform = "scaleX(-1)";
+                    else carImg.style.transform = "scaleX(1)";
+                }
+            });
+            updateUI();
+        }
+
+        function handleCarSelection(carData) {
+            if (unlockedCars.includes(carData.id)) {
+                state.carType = carData.id;
+                localStorage.setItem('nitro_active_car', carData.id);
+                renderGarage();
+                playSound(600, 'sine', 0.1);
+            } else {
+                if (state.coins >= carData.price) {
+                    if(confirm("کیا آپ یہ گاڑی خریدنا چاہتے ہیں؟")) {
+                        state.coins -= carData.price;
+                        unlockedCars.push(carData.id);
+                        localStorage.setItem('nitro_coins', state.coins);
+                        localStorage.setItem('nitro_unlocked', JSON.stringify(unlockedCars));
+                        renderGarage();
+                        playSound(800, 'sine', 0.2);
+                    }
+                } else {
+                    alert("سکے کم ہیں!");
+                }
+            }
+        }
+
+        function updateUI() {
+            coinEl.innerText = state.coins;
+            document.getElementById('speed-lvl').innerText = upgrades.speed;
+            document.getElementById('shield-lvl').innerText = upgrades.shield;
+        }
+
+        function upgrade(type) {
+            let cost = type === 'speed' ? 50 : 75;
+            if (state.coins >= cost) {
+                state.coins -= cost;
+                upgrades[type]++;
+                localStorage.setItem('nitro_coins', state.coins);
+                localStorage.setItem('nitro_upgrades', JSON.stringify(upgrades));
+                if(type === 'speed') state.speed += 0.5;
+                if(type === 'shield') state.shieldTime += 1000;
+                playSound(700, 'sine', 0.1);
+                updateUI();
+            } else { alert("سکے کم ہیں!"); }
+        }
+
+        function checkDailyReward() {
+            const lastDate = localStorage.getItem('last_nitro_reward');
+            const today = new Date().toDateString();
+            if (lastDate !== today) {
+                state.coins += 50;
+                localStorage.setItem('nitro_coins', state.coins);
+                localStorage.setItem('last_nitro_reward', today);
+                updateUI();
+                document.getElementById('reward-msg').style.display = 'block';
+            }
+        }
+
+        function startGame() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            state.playing = true;
+            document.getElementById('menu-screen').style.display = 'none';
+            spawnEngine();
+            animate();
+            playSound(150, 'sawtooth', 0.5);
+        }
+
+        function jump() {
+            if (state.jumping || !state.playing) return;
+            state.jumping = true;
+            playSound(400, 'triangle', 0.2);
+            
+            const currentTransform = (state.carType === 'car2') ? "scaleX(-1)" : "";
+            carImg.style.transform = `translateY(-180px) ${currentTransform}`;
+            
+            setTimeout(() => {
+                carImg.style.transform = `translateY(0) ${currentTransform}`;
+                setTimeout(() => { state.jumping = false; }, 300);
+            }, 450);
+        }
+
+        function spawnEngine() {
+            if (!state.playing) return;
+            const rand = Math.random();
+            let type = (rand > 0.85) ? "coin" : (rand > 0.8 ? "shield" : "obstacle");
+            let img = type === "coin" ? "https://cdn-icons-png.flaticon.com/512/272/272525.png" : 
+                      (type === "shield" ? "https://cdn-icons-png.flaticon.com/512/3816/3816155.png" : "https://cdn-icons-png.flaticon.com/512/2555/2555572.png");
+            createEntity(type, img);
+            setTimeout(spawnEngine, Math.random() * 1200 + (1000 - (state.level * 50)));
+        }
+
+        function createEntity(type, imgSrc) {
+            const el = document.createElement('div');
+            el.className = `entity`;
+            if (type === "obstacle") {
+                const varRand = Math.random();
+                if (varRand > 0.7) el.classList.add('obs-tall');
+                else if (varRand > 0.4) el.classList.add('obs-long');
+            }
+            el.style.backgroundImage = `url(${imgSrc})`;
+            viewport.appendChild(el);
+
+            let pos = viewport.offsetWidth;
+            const move = setInterval(() => {
+                if (!state.playing) { clearInterval(move); el.remove(); return; }
+                pos -= state.speed;
+                el.style.left = pos + 'px';
+
+                const c = carImg.getBoundingClientRect();
+                const e = el.getBoundingClientRect();
+
+                if (c.right-35 > e.left && c.left+35 < e.right && c.bottom-20 > e.top) {
+                    if (type === "coin") {
+                        state.coins++; updateUI();
+                        localStorage.setItem('nitro_coins', state.coins);
+                        playSound(800, 'sine', 0.1);
+                        el.remove(); clearInterval(move);
+                    } else if (type === "shield") {
+                        state.shield = true; carImg.classList.add('shield-fx');
+                        setTimeout(() => { state.shield = false; carImg.classList.remove('shield-fx'); }, state.shieldTime);
+                        el.remove(); clearInterval(move);
+                        playSound(1000, 'square', 0.3);
+                    } else if (!state.shield) {
+                        state.playing = false;
+                        playSound(100, 'sawtooth', 0.8);
+                        document.getElementById('final-stats').innerText = `اسکور: ${state.score} | لیول: ${state.level}`;
+                        document.getElementById('gameover-screen').style.display = 'flex';
+                    }
+                }
+                if (pos < -100) {
+                    if (type === "obstacle") {
+                        state.score += 50; scoreEl.innerText = state.score;
+                        if (state.score > 0 && state.score % 500 === 0) {
+                            state.level++; state.speed += 1.5;
+                            levelEl.innerText = state.level;
+                            playSound(1200, 'sine', 0.4);
+                        }
+                    }
+                    el.remove(); clearInterval(move);
+                }
+            }, 10);
+        }
+
+        function animate() {
+            if (!state.playing) return;
+            state.bgPos -= (state.speed - 2);
+            viewport.style.backgroundPositionX = state.bgPos + 'px';
+            requestAnimationFrame(animate);
+        }
+
+        renderGarage();
+        checkDailyReward();
+        window.addEventListener('touchstart', (e) => { 
+            if (e.target.tagName !== 'BUTTON' && !e.target.closest('.car-option')) jump(); 
+        });
+        window.addEventListener('keydown', (e) => { if(e.code === "Space") jump(); });
+    </script>
+</body>
+</html>
